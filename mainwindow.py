@@ -9,6 +9,8 @@ from PySide6.QtWidgets import (
 from PySide6.QtGui import QPixmap, QFontDatabase, QFont
 from PySide6.QtCore import Qt
 
+from pages import MapPage, DrivePage, VoiceControlPage, VoiceMode
+
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from ota.ota_signal import setup_signal_handling
 from ota.download_window import DownloadWindow
