@@ -9,8 +9,9 @@ from PySide6.QtWidgets import (
 from PySide6.QtGui import QPixmap, QFontDatabase, QFont
 from PySide6.QtCore import Qt
 
-from pages import MapPage, DrivePage, VoiceControlPage, VoiceMode
-from ota import setup_signal_handling, DownloadWindow
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+from ota.ota_signal import setup_signal_handling
+from ota.download_window import DownloadWindow
 
 
 class MainWindow(QMainWindow):
@@ -20,7 +21,7 @@ class MainWindow(QMainWindow):
         self.setGeometry(100, 100, 800, 420)
 
         # 폰트 설정
-        font_id = QFontDatabase.addApplicationFont("assets/font/malgun.ttf")
+        font_id = QFontDatabase.addApplicationFont("app/assets/font/malgun.ttf")
         if font_id != -1:
             font_family = QFontDatabase.applicationFontFamilies(font_id)[0]
             app_font = QFont(font_family, 10)
@@ -32,9 +33,9 @@ class MainWindow(QMainWindow):
         self.stacked_widget = QStackedWidget()
 
         # 이미지 로딩
-        image_path_map = os.path.abspath("assets/img/map.png")
-        image_path_control = os.path.abspath("assets/img/steering-wheel.png")
-        image_path_mic = os.path.abspath("assets/img/mic.png")
+        image_path_map = os.path.abspath("app/assets/img/map.png")
+        image_path_control = os.path.abspath("app/assets/img/steering-wheel.png")
+        image_path_mic = os.path.abspath("app/assets/img/mic.png")
         pixmap_map = QPixmap(image_path_map)
         pixmap_control = QPixmap(image_path_control)
         pixmap_mic = QPixmap(image_path_mic)
