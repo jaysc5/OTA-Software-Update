@@ -1,13 +1,15 @@
+# -*- coding: utf-8 -*-
+
 import sys
 import os
 from PySide6.QtWidgets import (
-    QApplication, QMainWindow, QLabel, QPushButton, QStackedWidget,
+    QApplication, QMainWindow, QLabel, QStackedWidget,
     QWidget, QVBoxLayout, QHBoxLayout
 )
 from PySide6.QtGui import QPixmap, QFontDatabase, QFont
 from PySide6.QtCore import Qt
 
-from pages import MapPage, DrivePage
+from pages import MapPage, DrivePage, VoiceControlPage, VoiceMode
 from ota import setup_signal_handling, DownloadWindow
 
 
@@ -29,57 +31,50 @@ class MainWindow(QMainWindow):
 
         self.stacked_widget = QStackedWidget()
 
-        image_path1 = os.path.abspath("assets/img/map.png")
-        image_path2 = os.path.abspath("assets/img/steering-wheel.png")
-        pixmap1 = QPixmap(image_path1)
-        pixmap2 = QPixmap(image_path2)
+        # 이미지 로딩
+        image_path_map = os.path.abspath("assets/img/map.png")
+        image_path_control = os.path.abspath("assets/img/steering-wheel.png")
+        image_path_mic = os.path.abspath("assets/img/mic.png")
+        pixmap_map = QPixmap(image_path_map)
+        pixmap_control = QPixmap(image_path_control)
+        pixmap_mic = QPixmap(image_path_mic)
 
         self.page_home = QWidget()
 
-        # 수동 제어 버튼
-        self.label_control = QLabel()
-        self.label_control.setPixmap(pixmap2)
-        self.label_control.setFixedSize(128, 128)
-        self.label_control.setScaledContents(True)
-        self.label_control.setAlignment(Qt.AlignCenter)
-        self.label_control.mousePressEvent = self.goto_control_page
+        # --- 위젯 생성 함수 ---
+        def create_icon_widget(pixmap, text, callback):
+            label_icon = QLabel()
+            label_icon.setPixmap(pixmap)
+            label_icon.setFixedSize(128, 128)
+            label_icon.setScaledContents(True)
+            label_icon.setAlignment(Qt.AlignCenter)
+            label_icon.mousePressEvent = callback
 
-        self.label_control_text = QLabel("수동 제어")
-        self.label_control_text.setAlignment(Qt.AlignCenter)
+            label_text = QLabel(text)
+            label_text.setAlignment(Qt.AlignCenter)
 
-        control_layout = QVBoxLayout()
-        control_layout.addWidget(self.label_control)
-        control_layout.addWidget(self.label_control_text)
-        control_layout.setAlignment(Qt.AlignHCenter)
+            layout = QVBoxLayout()
+            layout.addWidget(label_icon)
+            layout.addWidget(label_text)
+            layout.setAlignment(Qt.AlignHCenter)
 
-        control_widget = QWidget()
-        control_widget.setLayout(control_layout)
+            container = QWidget()
+            container.setLayout(layout)
+            return container
 
-        # 지도 버튼
-        self.label_map = QLabel()
-        self.label_map.setPixmap(pixmap1)
-        self.label_map.setFixedSize(128, 128)
-        self.label_map.setScaledContents(True)
-        self.label_map.setAlignment(Qt.AlignCenter)
-        self.label_map.mousePressEvent = self.goto_map_page
+        # 각 버튼 위젯 구성
+        control_widget = create_icon_widget(pixmap_control, "수동 제어", self.goto_control_page)
+        map_widget = create_icon_widget(pixmap_map, "지도", self.goto_map_page)
+        voice_widget = create_icon_widget(pixmap_mic, "음성 제어", self.goto_voice_page)
 
-        self.label_map_text = QLabel("지도")
-        self.label_map_text.setAlignment(Qt.AlignCenter)
-
-        map_layout = QVBoxLayout()
-        map_layout.addWidget(self.label_map)
-        map_layout.addWidget(self.label_map_text)
-        map_layout.setAlignment(Qt.AlignHCenter)
-
-        map_widget = QWidget()
-        map_widget.setLayout(map_layout)
-
-        # 홈 레이아웃 구성
+        # 홈 페이지 상단 레이아웃 구성
         top_layout = QHBoxLayout()
         top_layout.addStretch(1)
         top_layout.addWidget(control_widget)
-        top_layout.addSpacing(150)
+        top_layout.addSpacing(80)
         top_layout.addWidget(map_widget)
+        top_layout.addSpacing(80)
+        top_layout.addWidget(voice_widget)
         top_layout.addStretch(1)
 
         layout_home = QVBoxLayout()
@@ -88,12 +83,17 @@ class MainWindow(QMainWindow):
         layout_home.addStretch(1)
         self.page_home.setLayout(layout_home)
 
+        # 페이지 정의   
         self.page_control = DrivePage(back_callback=self.goto_home_page)
         self.page_map = MapPage(back_callback=self.goto_home_page)
+        self.page_voice = VoiceControlPage(back_callback=self.goto_home_page)  # 먼저 정의하고
+        self.voice_mode = VoiceMode(self.page_voice)
 
-        self.stacked_widget.addWidget(self.page_home)
-        self.stacked_widget.addWidget(self.page_control)
-        self.stacked_widget.addWidget(self.page_map)
+        # 페이지 스택에 추가
+        self.stacked_widget.addWidget(self.page_home)    # index 0
+        self.stacked_widget.addWidget(self.page_control) # index 1
+        self.stacked_widget.addWidget(self.page_map)     # index 2
+        self.stacked_widget.addWidget(self.page_voice)   # index 3
 
         main_layout = QVBoxLayout()
         main_layout.addWidget(self.stacked_widget)
@@ -101,6 +101,7 @@ class MainWindow(QMainWindow):
 
         self.stacked_widget.setCurrentIndex(0)
 
+        # OTA 창 핸들링
         self.download_window = None
         setup_signal_handling(self, self.show_download_window)
 
@@ -116,11 +117,15 @@ class MainWindow(QMainWindow):
 
             self.download_window.show()
 
+    # 페이지 전환 함수들
     def goto_control_page(self, event):
         self.stacked_widget.setCurrentIndex(1)
 
     def goto_map_page(self, event):
         self.stacked_widget.setCurrentIndex(2)
+
+    def goto_voice_page(self, event):
+        self.stacked_widget.setCurrentIndex(3)
 
     def goto_home_page(self):
         self.stacked_widget.setCurrentIndex(0)
