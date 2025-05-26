@@ -4,10 +4,24 @@ from PySide6.QtWidgets import (
 )
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QColor
+import asyncio
+import websockets
+
+COMMAND_MAP = {
+    "Up": "앞으로",
+    "Down": "뒤로",
+    "Left": "왼쪽",
+    "Right": "오른쪽",
+    "Reset": "중앙",
+    "Start": "앞으로",
+    "Stop": "정지"
+}
 
 class DrivePage(QWidget):
     def __init__(self, back_callback=None):
         super().__init__()
+
+        self.ws_uri = "ws://192.168.137.205:7890"  # 서버 주소 수정 가능
 
         main_layout = QHBoxLayout()
         self.setLayout(main_layout)
@@ -82,6 +96,24 @@ class DrivePage(QWidget):
 
     def append_command(self, text):
         self.command_output.append(f"→ {text}")
+        print(f"[LOG] 명령 추가됨: {text}")
+        command_kor = COMMAND_MAP.get(text, text)
+        try:
+            asyncio.run(self.send_websocket_command(command_kor))
+        except RuntimeError as e:
+            print(f"[ERROR] asyncio.run() 실패: {e}")
+
+    async def send_websocket_command(self, command: str):
+        try:
+            print(f"[INFO] 서버 연결 시도 중: {self.ws_uri}")
+            async with websockets.connect(self.ws_uri) as ws:
+                print(f"[INFO] 서버 연결 성공")
+                await ws.send(command)
+                print(f"[TX] 전송: {command}")
+                response = await ws.recv()
+                print(f"[RX] 응답: {response}")
+        except Exception as e:
+            print(f"[ERROR] 웹소켓 전송 실패: {e}")
 
     def _add_shadow_effect(self, button):
         shadow = QGraphicsDropShadowEffect(self)
