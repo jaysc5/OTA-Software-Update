@@ -26,7 +26,7 @@ class MainWindow(QWidget):
 
         layout = QVBoxLayout()
 
-        mic_path = os.path.abspath("assets/img/mic.png")
+        mic_path = os.path.abspath("app/assets/img/mic.png")
         self.image = QLabel()
         self.image.setAlignment(Qt.AlignCenter)
         pixmap = QPixmap(mic_path)
